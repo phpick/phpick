@@ -103,25 +103,27 @@ check() {
 }
 
 echo "--- phpick self ---"
+# Read the version straight from the shim so this test survives version bumps.
+CUR_VERSION=$(sed -n 's/^PHPICK_VERSION="\([^"]*\)".*/\1/p' "$SHIM")
 out=$(phpick --version)
-check "phpick --version" "phpick 0.2.0" "$out"
+check "phpick --version" "phpick $CUR_VERSION" "$out"
 
 echo "--- phpick check-update ---"
 # Same version -> up to date
-cat > "$TMP/remote-phpick" <<'EOF'
+cat > "$TMP/remote-phpick" <<EOF
 #!/usr/bin/env bash
-PHPICK_VERSION="0.2.0"
+PHPICK_VERSION="$CUR_VERSION"
 EOF
 out=$(PHPICK_REMOTE_VERSION_URL="$TMP/remote-phpick" phpick check-update)
-check "check-update: same version"   "phpick 0.2.0 is up to date" "$out"
+check "check-update: same version"   "phpick $CUR_VERSION is up to date" "$out"
 
 # Remote newer -> upgrade prompt
 cat > "$TMP/remote-phpick" <<'EOF'
 #!/usr/bin/env bash
-PHPICK_VERSION="0.9.1"
+PHPICK_VERSION="99.9.1"
 EOF
 out=$(PHPICK_REMOTE_VERSION_URL="$TMP/remote-phpick" phpick check-update)
-check "check-update: remote newer"   "phpick 0.2.0 -> 0.9.1 available (run 'phpick update' to upgrade)" "$out"
+check "check-update: remote newer"   "phpick $CUR_VERSION -> 99.9.1 available (run 'phpick update' to upgrade)" "$out"
 
 # Remote older -> local ahead
 cat > "$TMP/remote-phpick" <<'EOF'
@@ -129,7 +131,7 @@ cat > "$TMP/remote-phpick" <<'EOF'
 PHPICK_VERSION="0.1.0"
 EOF
 out=$(PHPICK_REMOTE_VERSION_URL="$TMP/remote-phpick" phpick check-update)
-check "check-update: remote older"   "phpick 0.2.0 is ahead of remote 0.1.0" "$out"
+check "check-update: remote older"   "phpick $CUR_VERSION is ahead of remote 0.1.0" "$out"
 
 echo "--- phpick help lists new commands ---"
 out=$(phpick --help | grep -c -E '^  (update|check-update) ')
