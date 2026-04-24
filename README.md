@@ -66,13 +66,37 @@ No pin, no `composer.json`, or the pinned version isn't installed → falls back
 - WSL ✓
 - Windows native — not yet; use WSL
 
-## Environment overrides for install
+## Updating
+
+```bash
+phpick check-update    # is a newer version published?
+phpick update          # reinstall in place
+```
+
+`update` re-runs the installer from `$PHPICK_REPO@$PHPICK_REF` (defaults: `phpick/phpick@main`), overwriting the shim at `$PHPICK_HOME/bin/phpick`. Pin a specific release with `PHPICK_REF=v0.2.0 phpick update`.
+
+The shim also runs a quiet background check once per UTC day when you invoke `php` or `composer` interactively, and prints a single-line hint to stderr if a newer version is published. The check runs detached from the foreground command so it never adds latency, and it's skipped when stderr isn't a TTY (scripts, pipes, CI). Disable with `PHPICK_NO_UPDATE_CHECK=1`.
+
+## Environment overrides
+
+Install (`install.sh`):
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `PHPICK_REF` | `main` | Git ref to install from |
 | `PHPICK_HOME` | `$HOME/.phpick` | Install prefix |
 | `PHPICK_NO_PATH` | `0` | Skip modifying shell rc files |
+
+Update / version check (`phpick update`, `phpick check-update`, daily shim check):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PHPICK_REF` | `main` | Git ref to fetch from |
+| `PHPICK_REPO` | `phpick/phpick` | `owner/repo` on GitHub |
+| `PHPICK_INSTALL_URL` | derived | Full URL to `install.sh` (overrides `REF`/`REPO`) |
+| `PHPICK_REMOTE_VERSION_URL` | derived | Full URL to `bin/phpick` used for the version check |
+| `PHPICK_NO_UPDATE_CHECK` | `0` | Set to `1` to disable the daily background update check |
+| `PHPICK_UPDATE_STAMP` | `${XDG_CACHE_HOME:-~/.cache}/phpick/last-check` | Rate-limit stamp file |
 
 ## Uninstall
 
