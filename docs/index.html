@@ -3,21 +3,21 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>phpick — per-project PHP version routing</title>
-    <meta name="description" content="Pin a PHP version in composer.json; phpick routes composer and php to the matching binary. Like Volta, but for PHP.">
-    <meta name="theme-color" content="#4b3b7a">
-    <meta property="og:title" content="phpick — per-project PHP version routing">
-    <meta property="og:description" content="Pin a PHP version in composer.json; phpick routes composer and php to the matching binary. Like Volta, but for PHP.">
+    <title>PHPick — per-project PHP version routing</title>
+    <meta name="description" content="Pin a PHP version in composer.json; PHPick routes composer and php to the matching binary. Like Volta, but for PHP.">
+    <meta name="theme-color" content="#2d5e97">
+    <meta property="og:title" content="PHPick — per-project PHP version routing">
+    <meta property="og:description" content="Pin a PHP version in composer.json; PHPick routes composer and php to the matching binary. Like Volta, but for PHP.">
     <meta property="og:type" content="website">
     <meta property="og:image" content="./og.png">
-    <link rel="icon" type="image/svg+xml" href="./logo-mark.svg">
+    <link rel="icon" type="image/png" href="./logo-mark.png">
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
     <header class="nav">
         <a class="brand" href="./">
-            <img src="./logo-mark.svg" alt="" width="32" height="32">
-            <span>phpick</span>
+            <img src="./logo-mark.png" alt="" width="32" height="32">
+            <span>PHPick</span>
         </a>
         <nav>
             <a href="#install">Install</a>
@@ -29,7 +29,7 @@
 
     <main>
         <section class="hero">
-            <img class="hero-logo" src="./logo-mark.svg" alt="phpick logo" width="220" height="220">
+            <img class="hero-logo" src="./logo-mark.png" alt="PHPick logo" width="220" height="220">
             <h1>Per-project <span class="accent">PHP</span> version routing.</h1>
             <p class="lede">
                 Pin a PHP version in your <code>composer.json</code>.
@@ -89,7 +89,7 @@
   }
 }</code></pre>
             <p class="note">
-                phpick reads the major.minor (<code>8.4</code>) and routes to a matching installed PHP binary.
+                PHPick reads the major.minor (<code>8.4</code>) and routes to a matching installed PHP binary.
                 Bonus: composer already uses <code>config.platform.php</code> for dependency resolution,
                 so pinning here keeps both runtime and lockfile in sync.
             </p>

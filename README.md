@@ -1,4 +1,4 @@
-# phpick
+# PHPick
 
 Per-project PHP version routing for `composer` and `php` — like [Volta](https://volta.sh) but for PHP.
 
@@ -48,7 +48,7 @@ This writes to your `composer.json`:
 }
 ```
 
-phpick honors the major.minor (`8.4`) and routes to a matching installed PHP binary.
+PHPick honors the major.minor (`8.4`) and routes to a matching installed PHP binary.
 
 Bonus: composer already uses `config.platform.php` for dependency resolution, so pinning here keeps both runtime and lockfile in sync.
 
