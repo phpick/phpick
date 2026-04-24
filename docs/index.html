@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>phpick — per-project PHP version routing</title>
+    <meta name="description" content="Pin a PHP version in composer.json; phpick routes composer and php to the matching binary. Like Volta, but for PHP.">
+    <meta name="theme-color" content="#4b3b7a">
+    <meta property="og:title" content="phpick — per-project PHP version routing">
+    <meta property="og:description" content="Pin a PHP version in composer.json; phpick routes composer and php to the matching binary. Like Volta, but for PHP.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="./og.png">
+    <link rel="icon" type="image/svg+xml" href="./logo-mark.svg">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <header class="nav">
+        <a class="brand" href="./">
+            <img src="./logo-mark.svg" alt="" width="32" height="32">
+            <span>phpick</span>
+        </a>
+        <nav>
+            <a href="#install">Install</a>
+            <a href="#pin">Pin a version</a>
+            <a href="#how">How it works</a>
+            <a href="https://github.com/phpick/phpick">GitHub</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <img class="hero-logo" src="./logo-mark.svg" alt="phpick logo" width="220" height="220">
+            <h1>Per-project <span class="accent">PHP</span> version routing.</h1>
+            <p class="lede">
+                Pin a PHP version in your <code>composer.json</code>.
+                <code>composer</code> and <code>php</code> automatically run on that version
+                inside the project — and fall back to your system default outside.
+            </p>
+            <p class="lede subtle">
+                Like <a href="https://volta.sh">Volta</a>, but for PHP. Works on Linux, macOS, WSL, and Windows.
+            </p>
+            <div class="cta">
+                <a class="btn primary" href="#install">Install</a>
+                <a class="btn ghost" href="https://github.com/phpick/phpick">View on GitHub</a>
+            </div>
+        </section>
+
+        <section id="install" class="section">
+            <h2>Install</h2>
+            <div class="tabs" data-tabs>
+                <div class="tab-list" role="tablist">
+                    <button type="button" role="tab" aria-selected="true" data-tab="unix">macOS / Linux / WSL</button>
+                    <button type="button" role="tab" aria-selected="false" data-tab="win">Windows</button>
+                </div>
+                <div class="tab-panels">
+                    <div class="tab-panel" data-panel="unix" role="tabpanel">
+                        <pre><code>curl -fsSL https://raw.githubusercontent.com/phpick/phpick/main/install.sh | bash</code></pre>
+                        <p class="caption">
+                            Drops a single shim at <code>~/.phpick/bin/phpick</code>, symlinks it as
+                            <code>composer</code> and <code>php</code>, and puts
+                            <code>~/.phpick/bin</code> first on your <code>PATH</code>.
+                            Open a new shell and you're done.
+                        </p>
+                    </div>
+                    <div class="tab-panel hidden" data-panel="win" role="tabpanel">
+                        <pre><code>irm https://raw.githubusercontent.com/phpick/phpick/main/install.ps1 | iex</code></pre>
+                        <p class="caption">
+                            Downloads <code>phpick.exe</code> (Rust native, ~300&nbsp;KB) to
+                            <code>%LOCALAPPDATA%\phpick\bin</code>, copies it as
+                            <code>php.exe</code> and <code>composer.exe</code>, and prepends
+                            that directory to your user <code>PATH</code>. Auto-detects PHP from
+                            Laragon, Scoop, Chocolatey, and Herd.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="pin" class="section">
+            <h2>Pin a project</h2>
+            <p>Use composer's built-in config:</p>
+            <pre><code>composer config platform.php 8.4.15</code></pre>
+            <p>That writes to your <code>composer.json</code>:</p>
+            <pre><code class="json">{
+  "config": {
+    "platform": {
+      "php": "8.4.15"
+    }
+  }
+}</code></pre>
+            <p class="note">
+                phpick reads the major.minor (<code>8.4</code>) and routes to a matching installed PHP binary.
+                Bonus: composer already uses <code>config.platform.php</code> for dependency resolution,
+                so pinning here keeps both runtime and lockfile in sync.
+            </p>
+        </section>
+
+        <section id="how" class="section">
+            <h2>How it works</h2>
+            <p>When you run <code>composer</code> or <code>php</code>, the shim:</p>
+            <ol class="how">
+                <li>Walks up from <code>$PWD</code> to the nearest <code>composer.json</code>.</li>
+                <li>Reads <code>config.platform.php</code>.</li>
+                <li>Resolves the matching PHP binary in this order:
+                    <ul>
+                        <li><code>phpX.Y</code> on <code>PATH</code> — Debian / Ubuntu</li>
+                        <li><code>phpXY</code> on <code>PATH</code> — some RHEL-family distros</li>
+                        <li>Homebrew — <code>brew --prefix php@X.Y</code></li>
+                        <li>asdf — <code>~/.asdf/installs/php/X.Y.*/bin/php</code></li>
+                        <li>phpenv — <code>~/.phpenv/versions/X.Y.*/bin/php</code></li>
+                        <li>Laravel Herd — <code>~/Library/Application Support/Herd/bin/phpX.Y</code></li>
+                        <li>Laragon (Windows) — <code>C:\laragon\bin\php\php-X.Y.*\php.exe</code></li>
+                        <li>Scoop / Chocolatey / generic <code>C:\Program Files\PHP\X.Y</code></li>
+                    </ul>
+                </li>
+                <li>Execs the real <code>composer</code> or <code>php</code> under that PHP.</li>
+            </ol>
+            <p>
+                No pin, no <code>composer.json</code>, or the pinned version isn't installed →
+                falls back to your system default with a warning in the last case.
+            </p>
+        </section>
+
+        <section id="update" class="section">
+            <h2>Updating</h2>
+            <pre><code>phpick check-update    # is a newer version published?
+phpick update          # reinstall in place</code></pre>
+            <p>
+                The shim also runs a quiet background check once per UTC day when you invoke
+                <code>php</code> or <code>composer</code> interactively, and prints a single-line
+                hint to stderr if a newer version is published. Disable with
+                <code>PHPICK_NO_UPDATE_CHECK=1</code>.
+            </p>
+        </section>
+
+        <section id="overrides" class="section">
+            <h2>Environment overrides</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>PHPICK_HOME</code></td><td><code>$HOME/.phpick</code> / <code>%LOCALAPPDATA%\phpick</code></td><td>Install prefix</td></tr>
+                        <tr><td><code>PHPICK_REPO</code></td><td><code>phpick/phpick</code></td><td>GitHub repo for updates</td></tr>
+                        <tr><td><code>PHPICK_RELEASE_TAG</code></td><td><code>latest</code></td><td>Release to install / update to</td></tr>
+                        <tr><td><code>PHPICK_PHP_X_Y</code></td><td>—</td><td>Force a specific PHP path for version X.Y</td></tr>
+                        <tr><td><code>PHPICK_NO_UPDATE_CHECK</code></td><td><code>0</code></td><td>Set to <code>1</code> to disable the daily check</td></tr>
+                        <tr><td><code>PHPICK_NO_PATH</code></td><td><code>0</code></td><td>Skip modifying shell rc / user PATH</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="foot">
+        <div>
+            <a href="https://github.com/phpick/phpick">github.com/phpick/phpick</a>
+            — MIT licensed.
+        </div>
+    </footer>
+
+    <script>
+        // Tiny tab switcher — no framework.
+        document.querySelectorAll('[data-tabs]').forEach(function (root) {
+            var buttons = root.querySelectorAll('[data-tab]');
+            var panels = root.querySelectorAll('[data-panel]');
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var key = btn.getAttribute('data-tab');
+                    buttons.forEach(function (b) {
+                        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+                    });
+                    panels.forEach(function (p) {
+                        p.classList.toggle('hidden', p.getAttribute('data-panel') !== key);
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

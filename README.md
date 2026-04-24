@@ -10,11 +10,21 @@ You have multiple PHP versions installed (`php8.2`, `php8.4`, `php8.5`) and your
 
 ## Install
 
+**macOS / Linux / WSL** — bash shim:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/phpick/phpick/main/install.sh | bash
 ```
 
 This drops a single shim at `~/.phpick/bin/phpick`, symlinks it as `composer` and `php`, and puts `~/.phpick/bin` first on your `PATH`.
+
+**Windows** — native Rust binary (~300 KB):
+
+```powershell
+irm https://raw.githubusercontent.com/phpick/phpick/main/install.ps1 | iex
+```
+
+Downloads `phpick.exe` to `%LOCALAPPDATA%\phpick\bin`, copies it as `php.exe` and `composer.exe`, and prepends the directory to your user `PATH`.
 
 Open a new shell (or `source ~/.bashrc`) and you're done.
 
@@ -64,7 +74,7 @@ No pin, no `composer.json`, or the pinned version isn't installed → falls back
 - Linux (Debian/Ubuntu, RHEL-family, Arch) ✓
 - macOS (system PHP, Homebrew `php@X.Y`, Herd, asdf, phpenv) ✓
 - WSL ✓
-- Windows native — not yet; use WSL
+- Windows native (Laragon, Scoop, Chocolatey, Herd for Windows, `C:\Program Files\PHP\X.Y`) ✓
 
 ## Updating
 
@@ -100,10 +110,28 @@ Update / version check (`phpick update`, `phpick check-update`, daily shim check
 
 ## Uninstall
 
+**Unix:**
+
 ```bash
 rm -rf ~/.phpick
 # then remove the '# phpick' PATH line from ~/.bashrc / ~/.zshrc
 ```
+
+**Windows:**
+
+```powershell
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\phpick"
+# then remove "$env:LOCALAPPDATA\phpick\bin" from your user PATH
+```
+
+## Building from source
+
+```bash
+cargo build --release --locked
+# -> target/release/phpick (or phpick.exe on Windows)
+```
+
+To install into your existing shim directory on Windows, drop the resulting `phpick.exe` into `%LOCALAPPDATA%\phpick\bin\` and run `phpick setup` to refresh the `php.exe` / `composer.exe` copies.
 
 ## License
 

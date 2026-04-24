@@ -5,7 +5,7 @@
 
 set -eu
 
-PHPICK_VERSION="0.2.0"
+PHPICK_VERSION="0.3.0"
 PHPICK_REPO_DEFAULT="phpick/phpick"
 
 invoked_as=$(basename -- "$0")

@@ -2,3 +2,7 @@
 *.log
 .DS_Store
 test/tmp/
+
+# Rust build output
+/target/
+**/*.rs.bk
