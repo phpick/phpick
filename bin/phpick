@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+# phpick — per-project PHP version routing for composer and php.
+# Pin per project:  composer config platform.php 8.4.15
+# https://github.com/phpick/phpick
+
+set -eu
+
+PHPICK_VERSION="0.1.0"
+
+invoked_as=$(basename -- "$0")
+
+# Resolve our own real path so we can skip ourselves when walking PATH.
+self_real=""
+if command -v readlink >/dev/null 2>&1 && readlink -f -- "$0" >/dev/null 2>&1; then
+    self_real=$(readlink -f -- "$0")
+elif command -v realpath >/dev/null 2>&1; then
+    self_real=$(realpath -- "$0" 2>/dev/null || echo "$0")
+else
+    self_real="$0"
+fi
+
+warn() { printf "phpick: %s\n" "$*" >&2; }
+
+# Resolve a candidate path to its canonical form (follow symlinks).
+canon() {
+    local p="$1"
+    if command -v readlink >/dev/null 2>&1 && readlink -f -- "$p" >/dev/null 2>&1; then
+        readlink -f -- "$p"
+    elif command -v realpath >/dev/null 2>&1; then
+        realpath -- "$p" 2>/dev/null || echo "$p"
+    else
+        echo "$p"
+    fi
+}
+
+# Find a binary named $1 on PATH, skipping any entry that resolves to us.
+find_real_binary() {
+    local name="$1"
+    local old_ifs="$IFS"
+    IFS=:
+    local p candidate cand_real
+    for p in $PATH; do
+        [ -z "$p" ] && p=.
+        candidate="$p/$name"
+        if [ -x "$candidate" ] && [ ! -d "$candidate" ]; then
+            cand_real=$(canon "$candidate")
+            if [ "$cand_real" != "$self_real" ]; then
+                IFS="$old_ifs"
+                printf "%s" "$candidate"
+                return 0
+            fi
+        fi
+    done
+    IFS="$old_ifs"
+    return 1
+}
+
+# Find a php binary for major.minor version $1 (e.g. "8.4").
+find_php_version() {
+    local ver="$1"
+    local compact="${ver//./}"
+    local name found d prefix
+
+    for name in "php${ver}" "php${compact}"; do
+        if found=$(find_real_binary "$name"); then
+            printf "%s" "$found"
+            return 0
+        fi
+    done
+
+    # Homebrew (macOS + linuxbrew)
+    if command -v brew >/dev/null 2>&1; then
+        prefix=$(brew --prefix "php@${ver}" 2>/dev/null || true)
+        if [ -n "$prefix" ] && [ -x "$prefix/bin/php" ]; then
+            printf "%s" "$prefix/bin/php"
+            return 0
+        fi
+    fi
+
+    # asdf
+    for d in "$HOME"/.asdf/installs/php/"${ver}".*; do
+        if [ -x "$d/bin/php" ]; then printf "%s" "$d/bin/php"; return 0; fi
+    done
+
+    # phpenv
+    for d in "$HOME"/.phpenv/versions/"${ver}".*; do
+        if [ -x "$d/bin/php" ]; then printf "%s" "$d/bin/php"; return 0; fi
+    done
+
+    # Laravel Herd (macOS)
+    local herd_bin="$HOME/Library/Application Support/Herd/bin"
+    if [ -x "$herd_bin/php${ver}" ]; then
+        printf "%s" "$herd_bin/php${ver}"
+        return 0
+    fi
+
+    return 1
+}
+
+# Walk up from $PWD to find the nearest directory containing composer.json.
+find_project_root() {
+    local dir="$PWD"
+    while [ -n "$dir" ] && [ "$dir" != "/" ]; do
+        if [ -f "$dir/composer.json" ]; then
+            printf "%s" "$dir"
+            return 0
+        fi
+        dir=$(dirname -- "$dir")
+    done
+    return 1
+}
+
+# Read config.platform.php from composer.json, reduce to major.minor.
+read_pinned_version() {
+    local composer_json="$1"
+    local parser_php="$2"
+    "$parser_php" -r '
+$path = $argv[1];
+$raw = @file_get_contents($path);
+if ($raw === false) { exit(1); }
+$data = @json_decode($raw, true);
+if (!is_array($data)) { exit(1); }
+$v = isset($data["config"]["platform"]["php"]) ? $data["config"]["platform"]["php"] : null;
+if (!$v) { exit(1); }
+if (preg_match("/^(\d+\.\d+)/", $v, $m)) { echo $m[1]; exit(0); }
+exit(1);
+' -- "$composer_json" 2>/dev/null
+}
+
+# --- main ---
+
+case "$invoked_as" in
+    phpick)
+        # Direct invocation: print info and exit.
+        case "${1:-}" in
+            -v|--version) echo "phpick $PHPICK_VERSION"; exit 0 ;;
+            -h|--help|"")
+                cat <<EOF
+phpick $PHPICK_VERSION — per-project PHP version routing
+
+Usage:
+  Run 'composer' or 'php' inside a project; phpick picks the PHP
+  version pinned in composer.json under config.platform.php.
+
+Pin a project:
+  composer config platform.php 8.4.15
+
+Flags:
+  -v, --version    print version
+  -h, --help       show this help
+EOF
+                exit 0 ;;
+            *) warn "unknown argument '$1'"; exit 2 ;;
+        esac
+        ;;
+esac
+
+# For composer/php dispatch we always need *some* working php to parse JSON.
+if ! real_php=$(find_real_binary php); then
+    echo "phpick: no 'php' binary found on PATH" >&2
+    exit 127
+fi
+
+pinned_php="$real_php"
+if project_root=$(find_project_root); then
+    if version=$(read_pinned_version "$project_root/composer.json" "$real_php"); then
+        if php_bin=$(find_php_version "$version"); then
+            pinned_php="$php_bin"
+        else
+            warn "composer.json pins php $version but no matching binary was found; using default php"
+        fi
+    fi
+fi
+
+case "$invoked_as" in
+    php)
+        exec "$pinned_php" "$@"
+        ;;
+    composer)
+        if ! real_composer=$(find_real_binary composer); then
+            echo "phpick: no 'composer' binary found on PATH" >&2
+            exit 127
+        fi
+        exec "$pinned_php" "$real_composer" "$@"
+        ;;
+    *)
+        echo "phpick: invoked as unknown name '$invoked_as' (expected php, composer, or phpick)" >&2
+        exit 1
+        ;;
+esac
